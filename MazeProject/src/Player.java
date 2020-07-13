@@ -67,7 +67,7 @@ public class Player extends Thread{
 		
 		long beg = System.currentTimeMillis();
 		long end;
-		Stack<TileNode> path = null;//A_star(Game.start, Game.goal, true);
+		Stack<TileNode> path = A_star(Game.start, Game.goal, true);
 		TileNode next, cur = myView[Game.start.getX()][Game.start.getY()];
 		totalPath.add(cur);
 		while(x != Game.goal.getX() || y != Game.goal.getY()) {
