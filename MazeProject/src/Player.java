@@ -67,7 +67,7 @@ public class Player extends Thread{
 		
 		long beg = System.currentTimeMillis();
 		long end;
-		Stack<TileNode> path = A_star(Game.start, Game.goal, true);
+		Stack<TileNode> path = null;//A_star(Game.start, Game.goal, true);
 		TileNode next, cur = myView[Game.start.getX()][Game.start.getY()];
 		totalPath.add(cur);
 		while(x != Game.goal.getX() || y != Game.goal.getY()) {
@@ -150,15 +150,13 @@ public class Player extends Thread{
 		}
 		
 		System.out.println("A* Backwards --> tie breaker: big G");
-
-		
 		expandedNodes = 0;
-		x = Game.goal.getX();
-		y = Game.goal.getY();
+		x = Game.start.getX();
+		y = Game.start.getY();
 		clearMyView();
-		path = A_star(Game.goal, Game.start, false);
+		Queue<TileNode> pathBack = A_star_back(Game.goal, Game.start, false);
 		next = null; 
-		cur = myView[Game.goal.getX()][Game.goal.getY()];
+		cur = myView[Game.start.getX()][Game.start.getY()];
 		totalPath.clear();
 		suc = true;
 		totalPath.add(cur);
@@ -171,14 +169,14 @@ public class Player extends Thread{
 		}
 		
 		beg = System.currentTimeMillis();
-		while(x != Game.start.getX() || y != Game.start.getY()) {
+		while(x != Game.goal.getX() || y != Game.goal.getY()) {
 			end = System.currentTimeMillis();
 			if(end - beg > 500 || Runner.trials) {
 				look();
-				next = path.pop();
+				next = pathBack.remove();
 				if(next.getStatus()) {
-					path = A_star(cur, Game.start, false);
-					if(path == null) {
+					pathBack = A_star_back(Game.goal, cur, false);
+					if(pathBack == null) {
 						suc = false;
 						break;
 					}
@@ -307,6 +305,53 @@ public class Player extends Thread{
 		}
 	}
 	
+	public Queue<TileNode> A_star_back(TileNode start, TileNode goal, boolean littleG){
+		if(!Runner.trials)
+			System.out.println("Performing A*...");
+		long b = System.currentTimeMillis();
+		BinaryHeap open = new BinaryHeap(30, littleG);
+		ArrayList<TileNode> closed = new ArrayList<TileNode>();
+
+		myView[start.getX()][start.getY()].visit(0, calcH(start.getX(), start.getY(), goal));
+		open.push(myView[start.getX()][start.getY()]);
+		TileNode cur;
+		TreeNode pathHead = new TreeNode(myView[start.getX()][start.getY()], null);
+		TreeNode currentNode = pathHead;
+		
+		while(!open.isEmpty() && !posContains(goal.getX(), goal.getY(), closed)) {
+			cur = open.pop();
+			currentNode = TreeNode.search(pathHead, cur);
+			//System.out.println(path);
+			closed.add(cur);
+			
+			for(TileNode t: alist.get(myView[cur.getX()][cur.getY()])) {
+				if(!t.getStatus() && !posContains(t.getX(), t.getY(), closed)) {
+					t.visit(cur.getG() + 1, calcH(t.getX(), t.getY(), goal));
+					open.push(t);
+					currentNode.addChild(new TreeNode(t, currentNode));
+				}
+			}
+		}
+		expandedNodes += closed.size();
+		if(open.isEmpty()) {
+			if(!Runner.trials)
+				System.out.println("PATH IS UNREACHABLE");
+			return null;
+		}
+		else {
+			Queue<TileNode> s = TreeNode.pathFinderQ(currentNode);
+			Queue<TileNode> temp = new LinkedList<TileNode>(s);
+			long e = System.currentTimeMillis();
+			if(!Runner.trials) {
+				System.out.print("Path Calculated: ");
+				printPath(temp, false);
+				long el = e - b;
+				System.out.println("Total Time Elapsed: " + el + " milliseconds");
+				System.out.println("Nodes Expanded:" + closed.size());
+			}
+			return s;
+		}
+	}
 	public Stack<TileNode> A_star_adap(TileNode start, TileNode goal, boolean littleG){
 		if(!Runner.trials)
 			System.out.println("Performing A*...");
@@ -378,13 +423,24 @@ public class Player extends Thread{
 	}
 	
 	public void printPath(Object s, boolean flip) {
+		String str = "";
 		if(s instanceof Stack) {
-			String str = "";
 			while(!((Stack) s).isEmpty()) {
 				if(flip)
 					str = "Node " + ((Stack) s).pop() + " -> " + str;
 				else 
 					str = str + "Node " + ((Stack) s).pop() + " -> ";
+			}
+			str = str.substring(0, str.length() - 3);
+			str = str + "|";
+			System.out.println(str);
+		}
+		else if(s instanceof Queue) {
+			while(!((Queue) s).isEmpty()) {
+				if(flip)
+					str = "Node " + ((Queue) s).remove() + " -> " + str;
+				else 
+					str = str + "Node " + ((Queue) s).remove() + " -> ";
 			}
 			str = str.substring(0, str.length() - 3);
 			str = str + "|";

@@ -1,4 +1,6 @@
 import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.Stack;
 
 public class TreeNode {
@@ -53,6 +55,18 @@ public class TreeNode {
 			cur = cur.getParent();
 			
 		}
+		return path;
+	}
+	
+	public static Queue<TileNode> pathFinderQ(TreeNode goal){
+		TreeNode cur = goal;
+		Queue<TileNode> path = new LinkedList<TileNode>();
+		while(cur.getParent() != null) {
+			path.add(cur.getData());
+			cur = cur.getParent();
+			
+		}
+		path.add(cur.getData());
 		return path;
 	}
 }

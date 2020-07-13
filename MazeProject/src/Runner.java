@@ -1,6 +1,6 @@
 
 public class Runner {
-	public static boolean trials = true;
+	public static boolean trials = false;
 	public static void main(String[] args) {
 		Game app;
 		Statistics stat = new Statistics();
