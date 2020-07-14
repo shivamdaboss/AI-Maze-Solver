@@ -1,6 +1,7 @@
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Set;
@@ -67,16 +68,16 @@ public class Player extends Thread{
 		
 		long beg = System.currentTimeMillis();
 		long end;
-		Stack<TileNode> path = A_star(Game.start, Game.goal, true);
+		Stack<TileNode> path = A_star(myView[Game.start.getX()][Game.start.getY()], myView[Game.goal.getX()][Game.goal.getY()], true);
 		TileNode next, cur = myView[Game.start.getX()][Game.start.getY()];
 		totalPath.add(cur);
 		while(x != Game.goal.getX() || y != Game.goal.getY()) {
 			end = System.currentTimeMillis();
-			if(end - beg > 500 || Runner.trials) {
+			if(end - beg > 100 || Runner.trials) {
 				look();
 				next = path.pop();
 				if(next.getStatus()) {
-					path = A_star(cur, Game.goal, true);
+					path = A_star(cur, myView[Game.goal.getX()][Game.goal.getY()], true);
 					if(path == null) {
 						suc = false;
 						break;
@@ -98,14 +99,14 @@ public class Player extends Thread{
 			System.out.println("Total Path Achieved: ");
 			printPath(totalPath, true);
 		}
-
+		
 		System.out.println("A* Forwards--> tie breaker: big G");
 
 		expandedNodes = 0;
 		x = Game.start.getX();
 		y = Game.start.getY();
 		clearMyView();
-		path = A_star(Game.start, Game.goal, false);
+		path = A_star(myView[Game.start.getX()][Game.start.getY()], myView[Game.goal.getX()][Game.goal.getY()], false);
 		next = null; 
 		cur = myView[Game.start.getX()][Game.start.getY()];
 		totalPath.clear();
@@ -122,11 +123,11 @@ public class Player extends Thread{
 		beg = System.currentTimeMillis();
 		while(x != Game.goal.getX() || y != Game.goal.getY()) {
 			end = System.currentTimeMillis();
-			if(end - beg > 500 || Runner.trials) {
+			if(end - beg > 100 || Runner.trials) {
 				look();
 				next = path.pop();
 				if(next.getStatus()) {
-					path = A_star(cur, Game.goal, false);
+					path = A_star(cur, myView[Game.goal.getX()][Game.goal.getY()], false);
 					if(path == null) {
 						suc = false;
 						break;
@@ -148,13 +149,13 @@ public class Player extends Thread{
 			System.out.println("Total Path Achieved: ");
 			printPath(totalPath, true);
 		}
-		
 		System.out.println("A* Backwards --> tie breaker: big G");
+
 		expandedNodes = 0;
 		x = Game.start.getX();
 		y = Game.start.getY();
 		clearMyView();
-		Queue<TileNode> pathBack = A_star_back(Game.goal, Game.start, false);
+		Queue<TileNode> pathBack = A_star_back(myView[Game.goal.getX()][Game.goal.getY()], myView[Game.start.getX()][Game.start.getY()], false);
 		next = null; 
 		cur = myView[Game.start.getX()][Game.start.getY()];
 		totalPath.clear();
@@ -171,11 +172,11 @@ public class Player extends Thread{
 		beg = System.currentTimeMillis();
 		while(x != Game.goal.getX() || y != Game.goal.getY()) {
 			end = System.currentTimeMillis();
-			if(end - beg > 500 || Runner.trials) {
+			if(end - beg > 100 || Runner.trials) {
 				look();
 				next = pathBack.remove();
 				if(next.getStatus()) {
-					pathBack = A_star_back(Game.goal, cur, false);
+					pathBack =  A_star_back(myView[Game.goal.getX()][Game.goal.getY()], cur, false);
 					if(pathBack == null) {
 						suc = false;
 						break;
@@ -197,14 +198,14 @@ public class Player extends Thread{
 			System.out.println("Total Path Achieved: ");
 			printPath(totalPath, true);
 		}
-
+		
 		System.out.println("A* Adaptive --> tie breaker: big G");
 
 		expandedNodes = 0;
 		x = Game.start.getX();
 		y = Game.start.getY();
 		clearMyView();
-		path = A_star_adap(Game.start, Game.goal, false);
+		path = A_star_adap(myView[Game.start.getX()][Game.start.getY()], myView[Game.goal.getX()][Game.goal.getY()], false);
 		next = null; 
 		cur = myView[Game.start.getX()][Game.start.getY()];
 		totalPath.clear();
@@ -221,11 +222,11 @@ public class Player extends Thread{
 		beg = System.currentTimeMillis();
 		while(x != Game.goal.getX() || y != Game.goal.getY()) {
 			end = System.currentTimeMillis();
-			if(end - beg > 500 || Runner.trials) {
+			if(end - beg > 100 || Runner.trials) {
 				look();
 				next = path.pop();
 				if(next.getStatus()) {
-					path = A_star_adap(cur, Game.goal, false);
+					path =  A_star_adap(cur, myView[Game.goal.getX()][Game.goal.getY()], false);
 					if(path == null) {
 						suc = false;
 						break;
@@ -263,22 +264,22 @@ public class Player extends Thread{
 			System.out.println("Performing A*...");
 		long b = System.currentTimeMillis();
 		BinaryHeap open = new BinaryHeap(30, littleG);
-		ArrayList<TileNode> closed = new ArrayList<TileNode>();
+		HashSet<TileNode> closed = new HashSet<TileNode>();
 
-		myView[start.getX()][start.getY()].visit(0, calcH(start.getX(), start.getY(), goal));
-		open.push(myView[start.getX()][start.getY()]);
+		start.visit(0, calcH(start.getX(), start.getY(), goal));
+		open.push(start);
 		TileNode cur;
-		TreeNode pathHead = new TreeNode(myView[start.getX()][start.getY()], null);
+		TreeNode pathHead = new TreeNode(start, null);
 		TreeNode currentNode = pathHead;
-		
-		while(!open.isEmpty() && !posContains(goal.getX(), goal.getY(), closed)) {
+		while(!open.isEmpty() && !closed.contains(goal)) {
 			cur = open.pop();
-			currentNode = TreeNode.search(pathHead, cur);
-			//System.out.println(path);
+			if(closed.contains(cur)) {
+				continue;
+			}
 			closed.add(cur);
-			
-			for(TileNode t: alist.get(myView[cur.getX()][cur.getY()])) {
-				if(!t.getStatus() && !posContains(t.getX(), t.getY(), closed)) {
+			currentNode = TreeNode.search(pathHead, cur);
+			for(TileNode t: alist.get(cur)) {
+				if(!t.getStatus() && !closed.contains(t)) {
 					t.visit(cur.getG() + 1, calcH(t.getX(), t.getY(), goal));
 					open.push(t);
 					currentNode.addChild(new TreeNode(t, currentNode));
@@ -310,22 +311,23 @@ public class Player extends Thread{
 			System.out.println("Performing A*...");
 		long b = System.currentTimeMillis();
 		BinaryHeap open = new BinaryHeap(30, littleG);
-		ArrayList<TileNode> closed = new ArrayList<TileNode>();
+		HashSet<TileNode> closed = new HashSet<TileNode>();
 
-		myView[start.getX()][start.getY()].visit(0, calcH(start.getX(), start.getY(), goal));
-		open.push(myView[start.getX()][start.getY()]);
+		start.visit(0, calcH(start.getX(), start.getY(), goal));
+		open.push(start);
 		TileNode cur;
-		TreeNode pathHead = new TreeNode(myView[start.getX()][start.getY()], null);
+		TreeNode pathHead = new TreeNode(start, null);
 		TreeNode currentNode = pathHead;
-		
-		while(!open.isEmpty() && !posContains(goal.getX(), goal.getY(), closed)) {
+		while(!open.isEmpty() && !closed.contains(goal)) {
 			cur = open.pop();
-			currentNode = TreeNode.search(pathHead, cur);
-			//System.out.println(path);
+			if(closed.contains(cur)) {
+				continue;
+			}
 			closed.add(cur);
+			currentNode = TreeNode.search(pathHead, cur);
 			
-			for(TileNode t: alist.get(myView[cur.getX()][cur.getY()])) {
-				if(!t.getStatus() && !posContains(t.getX(), t.getY(), closed)) {
+			for(TileNode t: alist.get(cur)) {
+				if(!t.getStatus() && !closed.contains(t)) {
 					t.visit(cur.getG() + 1, calcH(t.getX(), t.getY(), goal));
 					open.push(t);
 					currentNode.addChild(new TreeNode(t, currentNode));
@@ -355,34 +357,36 @@ public class Player extends Thread{
 	public Stack<TileNode> A_star_adap(TileNode start, TileNode goal, boolean littleG){
 		if(!Runner.trials)
 			System.out.println("Performing A*...");
-		//System.out.println("A* Adap");
+		
 		long b = System.currentTimeMillis();
 		BinaryHeap open = new BinaryHeap(30, littleG);
-		ArrayList<TileNode> closed = new ArrayList<TileNode>();
+		HashSet<TileNode> closed = new HashSet<TileNode>();
 		if(prevClosed != null) {
 			for(int i = 0; i < prevClosed.size(); i++) {
 				prevClosed.get(i).setH(prevClosed.get(i).getF() - prevClosed.get(i).getG());
 			}
 		}
-		
-		myView[start.getX()][start.getY()].visit(0, myView[start.getX()][start.getY()].getH());
-		open.push(myView[start.getX()][start.getY()]);
-		TileNode cur;
-		TreeNode pathHead = new TreeNode(myView[start.getX()][start.getY()], null);
+		start.visit(0, start.getH());
+		open.push(start);
+		TreeNode pathHead = new TreeNode(start, null);
 		TreeNode currentNode = pathHead;
+		TileNode cur;
 		
-		while(!open.isEmpty() && !posContains(goal.getX(), goal.getY(), closed)) {
+		while(!open.isEmpty() && !closed.contains(goal)) {
 			cur = open.pop();
-			currentNode = TreeNode.search(pathHead, cur);
-			//System.out.println(path);
-			closed.add(cur);
+			if(closed.contains(cur)) {
+				continue;
+			}
 			
-			for(TileNode t: alist.get(myView[cur.getX()][cur.getY()])) {
-				if(!t.getStatus() && !posContains(t.getX(), t.getY(), closed)) {
+			closed.add(cur);
+			currentNode = TreeNode.search(pathHead, cur);
+			
+			for(TileNode t: alist.get(cur)) {
+				if(!t.getStatus() && !closed.contains(t)) {
 					t.setG(cur.getG() + 1);
-					if(prevClosed == null || !posContains(t.getX(), t.getY(), prevClosed))
+					if(prevClosed == null || !prevClosed.contains(t))
 						t.setH(calcH(t.getX(), t.getY(), goal));
-					t.setF(t.getG() + t.getH());						
+					t.setF(t.getG() + t.getH());				
 					open.push(t);
 					currentNode.addChild(new TreeNode(t, currentNode));
 				}
@@ -390,7 +394,7 @@ public class Player extends Thread{
 		}
 		expandedNodes += closed.size();
 		//System.out.println("Closed: " + closed);
-		prevClosed = closed;
+		prevClosed = new ArrayList<TileNode>(closed);
 		if(open.isEmpty()) {
 			if(!Runner.trials)
 				System.out.println("PATH IS UNREACHABLE");
@@ -414,13 +418,6 @@ public class Player extends Thread{
 		return Math.abs((101 - goal.getY()) - (101 -  y)) + Math.abs(goal.getX() - x);
 	}
 	
-	public boolean posContains(int x, int y, ArrayList<TileNode> a) {
-		for(int i = 0; i < a.size(); i++) {
-			if(a.get(i).getX() == x && a.get(i).getY() == y)
-				return true;
-		}
-		return false;
-	}
 	
 	public void printPath(Object s, boolean flip) {
 		String str = "";

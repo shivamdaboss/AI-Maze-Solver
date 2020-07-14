@@ -143,4 +143,8 @@ public class BinaryHeap {
 		return false;
 	}
 	
+	public int size() {
+		return size;
+	}
+	
 }
